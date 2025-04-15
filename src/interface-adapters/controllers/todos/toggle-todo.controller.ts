@@ -22,7 +22,7 @@ function presenter(
   );
 }
 
-const inputSchema = z.object({ todoId: z.number() });
+const inputSchema = z.object({ todoId: z.string() });
 
 export type IToggleTodoController = ReturnType<typeof toggleTodoController>;
 

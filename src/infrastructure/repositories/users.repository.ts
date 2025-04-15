@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcrypt-ts';
 
-import { db } from '@/drizzle';
-import { users } from '@/drizzle/schema';
+import { db } from '@/lib/drizzle';
+import { users } from '@/lib/drizzle/schema';
 import { IUsersRepository } from '@/src/application/repositories/users.repository.interface';
 import { DatabaseOperationError } from '@/src/entities/errors/common';
 import type { CreateUser, User } from '@/src/entities/models/user';

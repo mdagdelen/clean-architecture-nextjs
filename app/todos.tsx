@@ -9,16 +9,16 @@ import { cn } from './_components/utils';
 import { bulkUpdate, toggleTodo } from './actions';
 import { Button } from './_components/ui/button';
 
-type Todo = { id: number; todo: string; userId: string; completed: boolean };
+type Todo = { id: string; todo: string; userId: string; completed: boolean };
 
 export function Todos({ todos }: { todos: Todo[] }) {
   const [bulkMode, setBulkMode] = useState(false);
-  const [dirty, setDirty] = useState<number[]>([]);
-  const [deleted, setDeleted] = useState<number[]>([]);
+  const [dirty, setDirty] = useState<string[]>([]);
+  const [deleted, setDeleted] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleToggle = useCallback(
-    async (id: number) => {
+    async (id: string) => {
       if (bulkMode) {
         const dirtyIndex = dirty.findIndex((t) => t === id);
         if (dirtyIndex > -1) {
@@ -43,7 +43,7 @@ export function Todos({ todos }: { todos: Todo[] }) {
   );
 
   const markForDeletion = useCallback(
-    (id: number) => {
+    (id: string) => {
       const dirtyIndex = dirty.findIndex((t) => t === id);
       if (dirtyIndex > -1) {
         const newDirty = Object.assign([], dirty);

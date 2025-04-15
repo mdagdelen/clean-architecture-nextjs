@@ -1,39 +1,53 @@
-import { eq } from 'drizzle-orm';
-
-import { db, Transaction } from '@/drizzle';
-import { todos } from '@/drizzle/schema';
 import { ITodosRepository } from '@/src/application/repositories/todos.repository.interface';
-import { DatabaseOperationError } from '@/src/entities/errors/common';
+
 import { TodoInsert, Todo } from '@/src/entities/models/todo';
 import type { IInstrumentationService } from '@/src/application/services/instrumentation.service.interface';
 import type { ICrashReporterService } from '@/src/application/services/crash-reporter.service.interface';
+import { DatabaseOperationError } from '@/src/entities/errors/common';
+import {
+  collection,
+  onSnapshot,
+  query,
+  getDocs,
+  doc,
+  getDoc,
+  updateDoc,
+  orderBy,
+  Timestamp,
+  runTransaction,
+  where,
+  addDoc,
+  getFirestore,
+  deleteDoc,
+} from 'firebase/firestore';
+import { db } from "@/lib/firebase/client-app";
 
 export class TodosRepository implements ITodosRepository {
   constructor(
     private readonly instrumentationService: IInstrumentationService,
     private readonly crashReporterService: ICrashReporterService
-  ) {}
+  ) { }
 
-  async createTodo(todo: TodoInsert, tx?: Transaction): Promise<Todo> {
-    const invoker = tx ?? db;
 
+  private collectionName = 'todos';
+
+  async createTodo(todo: TodoInsert): Promise<Todo> {
     return await this.instrumentationService.startSpan(
       { name: 'TodosRepository > createTodo' },
       async () => {
         try {
-          const query = invoker.insert(todos).values(todo).returning();
-
-          const [created] = await this.instrumentationService.startSpan(
+          const docRef = await addDoc(collection(db, this.collectionName),
             {
-              name: query.toSQL().sql,
-              op: 'db.query',
-              attributes: { 'db.system': 'sqlite' },
-            },
-            () => query.execute()
+              ...todo,
+              updatedAt: new Date().toISOString()
+            }
           );
-
-          if (created) {
-            return created;
+          if (docRef) {
+            const createdTodo: Todo = {
+              ...todo,
+              id: docRef.id
+            };
+            return createdTodo;
           } else {
             throw new DatabaseOperationError('Cannot create todo');
           }
@@ -45,79 +59,83 @@ export class TodosRepository implements ITodosRepository {
     );
   }
 
-  async getTodo(id: number): Promise<Todo | undefined> {
-    return await this.instrumentationService.startSpan(
-      { name: 'TodosRepository > getTodo' },
-      async () => {
-        try {
-          const query = db.query.todos.findFirst({
-            where: eq(todos.id, id),
-          });
+  async getTodo(id: string): Promise<Todo | undefined> {
 
-          const todo = await this.instrumentationService.startSpan(
-            {
-              name: query.toSQL().sql,
-              op: 'db.query',
-              attributes: { 'db.system': 'sqlite' },
-            },
-            () => query.execute()
-          );
+    const docRef = doc(db, this.collectionName, id);
+    const docSnap = await getDoc(docRef);
+    const data = docSnap.data()
 
-          return todo;
-        } catch (err) {
-          this.crashReporterService.report(err);
-          throw err; // TODO: convert to Entities error
-        }
-      }
-    );
+    if (!docSnap.exists()) {
+      return undefined; // TODO: convert to Entities error
+    }
+    if (!data) {
+      throw new DatabaseOperationError('Cannot get todo');
+    }
+    return {
+      id: docSnap.id,
+      userId: data.userId as string,
+      todo: data.todo as string,
+      completed: data.completed as boolean
+    } as Todo;
+
   }
 
   async getTodosForUser(userId: string): Promise<Todo[]> {
-    return await this.instrumentationService.startSpan(
+    return this.instrumentationService.startSpan(
       { name: 'TodosRepository > getTodosForUser' },
       async () => {
         try {
-          const query = db.query.todos.findMany({
-            where: eq(todos.userId, userId),
-          });
-
-          const usersTodos = await this.instrumentationService.startSpan(
-            {
-              name: query.toSQL().sql,
-              op: 'db.query',
-              attributes: { 'db.system': 'sqlite' },
-            },
-            () => query.execute()
+          let q = query(
+            collection(db, this.collectionName),
+            where("userId", "==", userId)
           );
-          return usersTodos;
+
+          const results = await getDocs(q);
+
+          if (results.empty) {
+            return [];
+          }
+          const todos = results.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          } as Todo));
+          return todos;
+
         } catch (err) {
           this.crashReporterService.report(err);
-          throw err; // TODO: convert to Entities error
+          return [];
         }
       }
     );
   }
 
-  async updateTodo(id: number, input: Partial<TodoInsert>): Promise<Todo> {
-    return await this.instrumentationService.startSpan(
+
+  async updateTodo(id: string, input: Partial<TodoInsert>, tx?: any): Promise<Todo> {
+    return this.instrumentationService.startSpan(
       { name: 'TodosRepository > updateTodo' },
       async () => {
         try {
-          const query = db
-            .update(todos)
-            .set(input)
-            .where(eq(todos.id, id))
-            .returning();
+          const docRef = doc(db, this.collectionName, id);
 
-          const [updated] = await this.instrumentationService.startSpan(
-            {
-              name: query.toSQL().sql,
-              op: 'db.query',
-              attributes: { 'db.system': 'sqlite' },
-            },
-            () => query.execute()
-          );
-          return updated;
+          await updateDoc(docRef, {
+            ...input,
+            updatedAt: new Date().toISOString()
+          });
+
+          const updatedDoc = await getDoc(docRef);
+          const updatedData = updatedDoc.data();
+
+          if (!updatedData) {
+            throw new DatabaseOperationError('Cannot fetch updated todo');
+          }
+
+          return {
+            id: updatedDoc.id,
+            userId: updatedData.userId as string,
+            todo: updatedData.todo as string,
+            completed: updatedData.completed as boolean,
+          } as Todo;
+
         } catch (err) {
           this.crashReporterService.report(err);
           throw err; // TODO: convert to Entities error
@@ -125,27 +143,14 @@ export class TodosRepository implements ITodosRepository {
       }
     );
   }
-
-  async deleteTodo(id: number, tx?: Transaction): Promise<void> {
-    const invoker = tx ?? db;
-
-    await this.instrumentationService.startSpan(
+  async deleteTodo(id: string, tx?: any): Promise<void> {
+    return this.instrumentationService.startSpan(
       { name: 'TodosRepository > deleteTodo' },
       async () => {
         try {
-          const query = invoker
-            .delete(todos)
-            .where(eq(todos.id, id))
-            .returning();
+          const docRef = doc(db, this.collectionName, id);
+          await deleteDoc(docRef);
 
-          await this.instrumentationService.startSpan(
-            {
-              name: query.toSQL().sql,
-              op: 'db.query',
-              attributes: { 'db.system': 'sqlite' },
-            },
-            () => query.execute()
-          );
         } catch (err) {
           this.crashReporterService.report(err);
           throw err; // TODO: convert to Entities error

@@ -14,7 +14,7 @@ export const deleteTodoUseCase =
   ) =>
   (
     input: {
-      todoId: number;
+      todoId: string;
     },
     userId: string,
     tx?: ITransaction

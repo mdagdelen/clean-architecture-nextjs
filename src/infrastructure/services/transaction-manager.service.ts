@@ -1,4 +1,4 @@
-import { db, Transaction } from '@/drizzle';
+import { db, Transaction } from '@/lib/drizzle';
 import { ITransactionManagerService } from '@/src/application/services/transaction-manager.service.interface';
 
 export class TransactionManagerService implements ITransactionManagerService {

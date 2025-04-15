@@ -2,7 +2,7 @@ import { generateIdFromEntropySize, Lucia } from 'lucia';
 import { compare } from 'bcrypt-ts';
 
 import { SESSION_COOKIE } from '@/config';
-import { luciaAdapter } from '@/drizzle';
+import { luciaAdapter } from '@/lib/drizzle';
 import { type IUsersRepository } from '@/src/application/repositories/users.repository.interface';
 import { IAuthenticationService } from '@/src/application/services/authentication.service.interface';
 import { UnauthenticatedError } from '@/src/entities/errors/auth';

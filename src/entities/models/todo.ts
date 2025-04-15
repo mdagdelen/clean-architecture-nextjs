@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const selectTodoSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   todo: z.string(),
   completed: z.boolean(),
   userId: z.string(),

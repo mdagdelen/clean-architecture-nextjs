@@ -9,8 +9,8 @@ import { IToggleTodoUseCase } from '@/src/application/use-cases/todos/toggle-tod
 import { IDeleteTodoUseCase } from '@/src/application/use-cases/todos/delete-todo.use-case';
 
 const inputSchema = z.object({
-  dirty: z.array(z.number()),
-  deleted: z.array(z.number()),
+  dirty: z.array(z.string()),
+  deleted: z.array(z.string()),
 });
 
 export type IBulkUpdateController = ReturnType<typeof bulkUpdateController>;

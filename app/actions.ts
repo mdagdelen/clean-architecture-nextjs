@@ -40,7 +40,7 @@ export async function createTodo(formData: FormData) {
   );
 }
 
-export async function toggleTodo(todoId: number) {
+export async function toggleTodo(todoId: string) {
   const instrumentationService = getInjection('IInstrumentationService');
   return await instrumentationService.instrumentServerAction(
     'toggleTodo',
@@ -74,7 +74,7 @@ export async function toggleTodo(todoId: number) {
   );
 }
 
-export async function bulkUpdate(dirty: number[], deleted: number[]) {
+export async function bulkUpdate(dirty: string[], deleted: string[]) {
   const instrumentationService = getInjection('IInstrumentationService');
   return await instrumentationService.instrumentServerAction(
     'bulkUpdate',

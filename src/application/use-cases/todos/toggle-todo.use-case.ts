@@ -14,7 +14,7 @@ export const toggleTodoUseCase =
   ) =>
   (
     input: {
-      todoId: number;
+      todoId: string;
     },
     userId: string,
     tx?: ITransaction

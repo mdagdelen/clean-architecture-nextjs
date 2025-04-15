@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "md-project-61383"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
