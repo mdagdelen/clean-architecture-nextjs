@@ -9,13 +9,13 @@ export class MockTodosRepository implements ITodosRepository {
   }
 
   async createTodo(todo: TodoInsert): Promise<Todo> {
-    const id = this._todos.length;
+    const id = this._todos.length.toString();
     const created = { ...todo, id };
     this._todos.push(created);
     return created;
   }
 
-  async getTodo(id: number): Promise<Todo | undefined> {
+  async getTodo(id: string): Promise<Todo | undefined> {
     const todo = this._todos.find((t) => t.id === id);
     return todo;
   }
@@ -25,7 +25,7 @@ export class MockTodosRepository implements ITodosRepository {
     return usersTodos;
   }
 
-  async updateTodo(id: number, input: Partial<TodoInsert>): Promise<Todo> {
+  async updateTodo(id: string, input: Partial<TodoInsert>): Promise<Todo> {
     const existingIndex = this._todos.findIndex((t) => t.id === id);
     const updated = {
       ...this._todos[existingIndex],
@@ -35,7 +35,7 @@ export class MockTodosRepository implements ITodosRepository {
     return updated;
   }
 
-  async deleteTodo(id: number): Promise<void> {
+  async deleteTodo(id: string): Promise<void> {
     const existingIndex = this._todos.findIndex((t) => t.id === id);
     if (existingIndex > -1) {
       delete this._todos[existingIndex];
